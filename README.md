@@ -157,7 +157,7 @@ Every refresh invalidates the previous refresh token. Two consequences:
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `PROXY_API_KEY` | *(none)* | Required key for every endpoint except `/healthz`. Unset means unauthenticated — don't. |
+| `PROXY_API_KEY` | *(none)* | Required key for every endpoint except `/healthz`. Protected endpoints fail with HTTP 503 when unset. |
 | `PROXY_HOST` / `PROXY_PORT` | `0.0.0.0` / `8080` | Listen address |
 | `CHATGPT_TOKEN_FILE` | `~/.config/chatgpt-proxy/auth.json` | Token store (`/data/auth.json` in Docker) |
 | `CHATGPT_MODEL` | `gpt-5.6-luna` | Model when the client sends none |
@@ -217,6 +217,6 @@ uv export --locked --no-dev --no-editable --no-emit-project \
   --format requirements-txt --output-file requirements.txt
 ```
 
-69 tests cover the translation layer, the token store and refresh rotation, SSE
-framing, the 401 retry, log redaction, and the HTTP surface against a stubbed
-backend. None of them touch the network.
+71 tests cover the translation layer, the token store and refresh rotation, SSE
+framing, the 401 retry, fail-closed access control, log redaction, and the HTTP
+surface against a stubbed backend. None of them touch the network.

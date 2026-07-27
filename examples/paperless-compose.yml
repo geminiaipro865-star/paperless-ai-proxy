@@ -45,6 +45,7 @@ services:
       - ./consume:/usr/src/paperless/consume
     environment:
       PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBENGINE: postgresql
       PAPERLESS_DBHOST: db
 
       # --- AI features, served from the ChatGPT plan -------------------

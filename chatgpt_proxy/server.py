@@ -50,7 +50,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             await app.state.backend.aclose()
 
-    app = FastAPI(title="paperless-chatgpt-proxy", lifespan=lifespan)
+    app = FastAPI(
+        title="paperless-chatgpt-proxy",
+        lifespan=lifespan,
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+    )
     app.state.settings = settings
     app.state.auth = auth
 
@@ -61,7 +67,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def require_api_key(request: Request) -> None:
         expected = settings.proxy_api_key
         if not expected:
-            return
+            raise HTTPException(
+                status_code=503,
+                detail=_error_body(
+                    "proxy API key is not configured",
+                    kind="api_error",
+                    code="proxy_api_key_not_configured",
+                ),
+            )
         header = request.headers.get("authorization", "")
         presented = (
             header[7:].strip()

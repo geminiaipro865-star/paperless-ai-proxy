@@ -62,7 +62,7 @@ class FakeBackend:
         return None
 
 
-def make_client(tmp_path, backend: FakeBackend, *, api_key: str | None = None) -> TestClient:
+def make_client(tmp_path, backend: FakeBackend, *, api_key: str | None = "test-key") -> TestClient:
     settings = Settings(
         token_file=tmp_path / "auth.json",
         host="127.0.0.1",
@@ -72,7 +72,8 @@ def make_client(tmp_path, backend: FakeBackend, *, api_key: str | None = None) -
         reasoning_effort="low",
         request_timeout=30,
     )
-    client = TestClient(create_app(settings))
+    headers = {"Authorization": f"Bearer {api_key}"} if api_key else None
+    client = TestClient(create_app(settings), headers=headers)
     client.__enter__()
     client.app.state.backend = backend
     return client
@@ -210,7 +211,11 @@ class TestAccessControl:
     def test_requests_without_key_are_rejected(self, tmp_path, backend):
         client = make_client(tmp_path, backend, api_key="s3cret")
         try:
-            unauthorised = client.post("/v1/chat/completions", json={"messages": []})
+            unauthorised = client.post(
+                "/v1/chat/completions",
+                json={"messages": []},
+                headers={"Authorization": ""},
+            )
             authorised = client.post(
                 "/v1/chat/completions",
                 json={"messages": [{"role": "user", "content": "hi"}]},
@@ -225,7 +230,7 @@ class TestAccessControl:
     def test_status_page_requires_key(self, tmp_path, backend):
         client = make_client(tmp_path, backend, api_key="s3cret")
         try:
-            unauthorised = client.get("/")
+            unauthorised = client.get("/", headers={"Authorization": ""})
             authorised = client.get(
                 "/",
                 headers={"Authorization": "Bearer s3cret"},
@@ -236,6 +241,24 @@ class TestAccessControl:
         assert unauthorised.status_code == 401
         assert authorised.status_code == 200
         assert "paperless-chatgpt-proxy" in authorised.text
+
+    def test_missing_server_key_fails_closed(self, tmp_path, backend):
+        client = make_client(tmp_path, backend, api_key=None)
+        try:
+            status = client.get("/")
+            logout = client.post("/auth/logout")
+            health = client.get("/healthz")
+        finally:
+            client.__exit__(None, None, None)
+
+        assert status.status_code == 503
+        assert logout.status_code == 503
+        assert health.status_code == 200
+
+    def test_schema_ui_is_not_exposed(self, client):
+        assert client.get("/docs").status_code == 404
+        assert client.get("/redoc").status_code == 404
+        assert client.get("/openapi.json").status_code == 404
 
     def test_health_stays_open(self, tmp_path, backend):
         client = make_client(tmp_path, backend, api_key="s3cret")

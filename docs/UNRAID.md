@@ -277,7 +277,23 @@ docker network connect paperless-ai-internal "$PAPERLESS_CONTAINER" 2>/dev/null 
 ## 11. Rollback
 
 1. In Paperless-ngx die zuvor notierten AI-/LLM-Werte wiederherstellen.
-2. Proxy stoppen und entfernen:
+2. Optional vor dem Stoppen die lokal gespeicherten OAuth-Tokens löschen:
+
+```bash
+APPDIR=/mnt/user/appdata/paperless-chatgpt-proxy
+cd "$APPDIR/source"
+
+docker compose \
+  --env-file "$APPDIR/.env" \
+  -f deploy/unraid/compose.yml \
+  exec chatgpt-proxy \
+  python -m chatgpt_proxy logout
+```
+
+Ohne diesen optionalen Schritt bleibt das Tokenverzeichnis für einen späteren
+Versuch erhalten.
+
+3. Proxy stoppen und entfernen:
 
 ```bash
 APPDIR=/mnt/user/appdata/paperless-chatgpt-proxy
@@ -289,13 +305,13 @@ docker compose \
   down
 ```
 
-3. Optional die zusätzliche Netzwerkverbindung entfernen:
+4. Optional die zusätzliche Netzwerkverbindung entfernen:
 
 ```bash
 PAPERLESS_CONTAINER=paperless-ngx
 docker network disconnect paperless-ai-internal "$PAPERLESS_CONTAINER"
 ```
 
-Das Tokenverzeichnis bleibt für einen späteren Versuch erhalten. Für vollständige
-Entfernung zuerst mit `python -m chatgpt_proxy logout` abmelden oder anschließend
-`/mnt/user/appdata/paperless-chatgpt-proxy` bewusst löschen.
+Für eine vollständige Entfernung anschließend
+`/mnt/user/appdata/paperless-chatgpt-proxy` bewusst löschen. Das entfernt auch
+Checkout, Konfiguration und persistierte Tokens.
