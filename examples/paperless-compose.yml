@@ -1,0 +1,68 @@
+# Complete example stack: paperless-ngx with its AI features answered by the
+# proxy instead of by the OpenAI API. Trimmed to the parts that matter -- see
+# the upstream docker-compose for the full paperless configuration.
+services:
+  broker:
+    image: docker.io/library/redis:8
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+
+  db:
+    image: docker.io/library/postgres:17
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: paperless
+
+  chatgpt-proxy:
+    build: ..
+    restart: unless-stopped
+    environment:
+      PROXY_API_KEY: ${PROXY_API_KEY:?set PROXY_API_KEY in .env}
+      CHATGPT_MODEL: ${CHATGPT_MODEL:-gpt-5.1-codex-mini}
+    volumes:
+      - chatgpt-proxy-data:/data
+    expose:
+      - "8080"
+
+  webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+      - broker
+      - chatgpt-proxy
+    ports:
+      - "8000:8000"
+    volumes:
+      - data:/usr/src/paperless/data
+      - media:/usr/src/paperless/media
+      - ./export:/usr/src/paperless/export
+      - ./consume:/usr/src/paperless/consume
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+
+      # --- AI features, served from the ChatGPT plan -------------------
+      PAPERLESS_AI_ENABLED: "true"
+      PAPERLESS_AI_LLM_BACKEND: openai-like
+      PAPERLESS_AI_LLM_ENDPOINT: http://chatgpt-proxy:8080/v1
+      PAPERLESS_AI_LLM_API_KEY: ${PROXY_API_KEY}
+      PAPERLESS_AI_LLM_MODEL: ${CHATGPT_MODEL:-gpt-5.1-codex-mini}
+      PAPERLESS_AI_LLM_REQUEST_TIMEOUT: "300"
+
+      # The ChatGPT backend serves no embedding models. RAG therefore runs on
+      # a local sentence-transformer; leave this out to disable RAG entirely.
+      PAPERLESS_AI_LLM_EMBEDDING_BACKEND: huggingface
+      PAPERLESS_AI_LLM_EMBEDDING_MODEL: sentence-transformers/all-MiniLM-L6-v2
+
+volumes:
+  data:
+  media:
+  pgdata:
+  redisdata:
+  chatgpt-proxy-data:

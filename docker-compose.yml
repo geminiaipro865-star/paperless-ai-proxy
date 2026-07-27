@@ -1,0 +1,22 @@
+# Drop-in for an existing paperless-ngx stack: add this service, then extend
+# your paperless `webserver` service with the environment block in the README.
+services:
+  chatgpt-proxy:
+    build: .
+    container_name: chatgpt-proxy
+    restart: unless-stopped
+    environment:
+      # Shared secret between paperless and this proxy. Anything on the Docker
+      # network could otherwise spend your ChatGPT quota.
+      PROXY_API_KEY: ${PROXY_API_KEY:?set PROXY_API_KEY in .env}
+      CHATGPT_MODEL: ${CHATGPT_MODEL:-gpt-5.1-codex-mini}
+      CHATGPT_REASONING_EFFORT: ${CHATGPT_REASONING_EFFORT:-low}
+      CHATGPT_REQUEST_TIMEOUT: ${CHATGPT_REQUEST_TIMEOUT:-300}
+    volumes:
+      - chatgpt-proxy-data:/data
+    # Not published to the host: only other containers on this network need it.
+    expose:
+      - "8080"
+
+volumes:
+  chatgpt-proxy-data:
