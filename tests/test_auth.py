@@ -17,9 +17,13 @@ import pytest
 from chatgpt_proxy import config
 from chatgpt_proxy.auth import AuthError
 from chatgpt_proxy.auth import AuthManager
+from chatgpt_proxy.auth import DeviceCode
 from chatgpt_proxy.auth import TokenStore
 from chatgpt_proxy.auth import credentials_from_tokens
+from chatgpt_proxy.auth import exchange_code_for_tokens
 from chatgpt_proxy.auth import import_codex_auth
+from chatgpt_proxy.auth import poll_device_code
+from chatgpt_proxy.auth import request_device_code
 from chatgpt_proxy.auth import tokens_from_response
 
 
@@ -107,6 +111,53 @@ class TestTokenParsing:
 
 def mock_client(handler) -> httpx.AsyncClient:
     return httpx.AsyncClient(transport=httpx.MockTransport(handler))
+
+
+class TestOAuthErrorRedaction:
+    private_body = "oauth-private-response-content-123"
+
+    @pytest.mark.asyncio
+    async def test_device_code_error_does_not_expose_response_body(self):
+        async with mock_client(
+            lambda _request: httpx.Response(500, text=self.private_body),
+        ) as client:
+            with pytest.raises(AuthError) as excinfo:
+                await request_device_code(client)
+
+        assert "HTTP 500" in str(excinfo.value)
+        assert self.private_body not in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_device_poll_error_does_not_expose_response_body(self):
+        device_code = DeviceCode(
+            verification_url="https://example.invalid/device",
+            user_code="TEST-CODE",
+            device_auth_id="device-1",
+            interval=1,
+        )
+        async with mock_client(
+            lambda _request: httpx.Response(500, text=self.private_body),
+        ) as client:
+            with pytest.raises(AuthError) as excinfo:
+                await poll_device_code(client, device_code)
+
+        assert "HTTP 500" in str(excinfo.value)
+        assert self.private_body not in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_token_exchange_error_does_not_expose_response_body(self):
+        async with mock_client(
+            lambda _request: httpx.Response(500, text=self.private_body),
+        ) as client:
+            with pytest.raises(AuthError) as excinfo:
+                await exchange_code_for_tokens(
+                    client,
+                    code="authorization-code",
+                    code_verifier="verifier",
+                )
+
+        assert "HTTP 500" in str(excinfo.value)
+        assert self.private_body not in str(excinfo.value)
 
 
 class TestAuthManager:

@@ -182,7 +182,7 @@ async def request_device_code(client: httpx.AsyncClient) -> DeviceCode:
             "(HTTP 404 from /deviceauth/usercode)",
         )
     if response.status_code >= 400:
-        raise AuthError(f"device code request failed: HTTP {response.status_code} {response.text}")
+        raise AuthError(f"device code request failed: HTTP {response.status_code}")
 
     body = response.json()
     interval = body.get("interval", 5)
@@ -223,7 +223,7 @@ async def poll_device_code(
                 raise AuthError("device authorisation timed out after 15 minutes")
             await asyncio.sleep(min(device_code.interval, max(deadline - time.monotonic(), 1)))
             continue
-        raise AuthError(f"device authorisation failed: HTTP {response.status_code} {response.text}")
+        raise AuthError(f"device authorisation failed: HTTP {response.status_code}")
 
 
 async def exchange_code_for_tokens(
@@ -248,7 +248,7 @@ async def exchange_code_for_tokens(
         },
     )
     if response.status_code >= 400:
-        raise AuthError(f"token exchange failed: HTTP {response.status_code} {response.text}")
+        raise AuthError(f"token exchange failed: HTTP {response.status_code}")
     return response.json()
 
 

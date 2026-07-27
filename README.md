@@ -206,10 +206,10 @@ uv sync --extra dev --locked
 uv run --locked --extra dev pytest
 ```
 
-`uv.lock` pins development and runtime resolution. `requirements.txt` is the
-hash-locked runtime export used by Docker, and the Dockerfile pins the
-multi-architecture Python base image by digest. Refresh Python dependencies
-both deliberately with:
+`uv.lock` pins development, build-backend, and runtime resolution.
+`requirements.txt` is the hash-locked runtime export used by Docker, and the
+Dockerfile pins the multi-architecture Python base image by digest. Refresh both
+deliberately with:
 
 ```bash
 uv lock --upgrade
@@ -217,6 +217,6 @@ uv export --locked --no-dev --no-editable --no-emit-project \
   --format requirements-txt --output-file requirements.txt
 ```
 
-71 tests cover the translation layer, the token store and refresh rotation, SSE
-framing, the 401 retry, fail-closed access control, log redaction, and the HTTP
+74 tests cover the translation layer, the token store and refresh rotation,
+OAuth/SSE log redaction, the 401 retry, fail-closed access control, and the HTTP
 surface against a stubbed backend. None of them touch the network.

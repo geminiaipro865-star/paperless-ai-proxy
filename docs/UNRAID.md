@@ -40,11 +40,26 @@ Den Namen aus der ersten Spalte übernehmen. Im Beispiel heißt er
 
 ```bash
 PAPERLESS_CONTAINER=paperless-ngx
+PAPERLESS_IMAGE="$(docker inspect "$PAPERLESS_CONTAINER" --format '{{.Config.Image}}')"
+
+case "$PAPERLESS_IMAGE" in
+  paperlessngx/paperless-ngx:3.0.3|ghcr.io/paperless-ngx/paperless-ngx:3.0.3)
+    printf 'Paperless image verified: %s\n' "$PAPERLESS_IMAGE"
+    ;;
+  *)
+    printf 'STOP: expected Paperless-ngx 3.0.3, found %s\n' "$PAPERLESS_IMAGE" >&2
+    exit 1
+    ;;
+esac
+
 docker inspect "$PAPERLESS_CONTAINER" \
   --format '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}'
 ```
 
 Wenn der Container anders heißt, in den folgenden Befehlen den Wert anpassen.
+Bei einem anderen Image-Tag zuerst das Unraid-Template bewusst auf Version
+`3.0.3` pinnen oder die Anleitung gegen die tatsächlich eingesetzte Version
+neu prüfen; nicht einfach über den `STOP` hinweggehen.
 
 ## 2. Internen LLM-Endpunkt in Paperless explizit erlauben
 
