@@ -63,10 +63,11 @@ class Settings:
             token_file=Path(
                 os.environ.get("CHATGPT_TOKEN_FILE", "~/.config/chatgpt-proxy/auth.json"),
             ).expanduser(),
-            host=os.environ.get("PROXY_HOST", "0.0.0.0"),
+            # Container listener; shipped Compose requires auth and publishes no port.
+            host=os.environ.get("PROXY_HOST", "0.0.0.0"),  # nosec B104
             port=_int_env("PROXY_PORT", 8080),
             proxy_api_key=os.environ.get("PROXY_API_KEY") or None,
-            default_model=os.environ.get("CHATGPT_MODEL", "gpt-5.1-codex-mini"),
+            default_model=os.environ.get("CHATGPT_MODEL", "gpt-5.6-luna"),
             reasoning_effort=os.environ.get("CHATGPT_REASONING_EFFORT", "low"),
             request_timeout=_int_env("CHATGPT_REQUEST_TIMEOUT", 300),
             forward_sampling=os.environ.get("CHATGPT_FORWARD_SAMPLING", "").lower()

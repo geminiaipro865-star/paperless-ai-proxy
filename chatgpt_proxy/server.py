@@ -164,7 +164,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.login_state = {"status": "idle"}
         return {"logged_out": True}
 
-    @app.get("/", response_class=HTMLResponse)
+    @app.get("/", dependencies=guard, response_class=HTMLResponse)
     async def index() -> str:
         status = auth.status()
         if status["logged_in"]:
@@ -176,7 +176,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         else:
             body = (
-                "<p>Not signed in. Run <code>docker compose exec proxy chatgpt-proxy login</code> "
+                "<p>Not signed in. Run <code>docker compose exec chatgpt-proxy "
+                "python -m chatgpt_proxy login</code> "
                 "or POST to <code>/auth/login/start</code>.</p>"
             )
         return (

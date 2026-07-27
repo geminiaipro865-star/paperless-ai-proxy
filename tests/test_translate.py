@@ -30,7 +30,7 @@ CLASSIFIER_TOOL = {
 }
 
 PAPERLESS_REQUEST = {
-    "model": "gpt-5.1-codex-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
         {"role": "system", "content": "You are an AI assistant integrated into Paperless-ngx."},
         {"role": "user", "content": "Analyze the following document...\nFilename: invoice.pdf"},

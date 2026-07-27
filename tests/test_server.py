@@ -24,7 +24,7 @@ TOOL_CALL_EVENTS = [
     {
         "type": "response.completed",
         "response": {
-            "model": "gpt-5.1-codex-mini",
+            "model": "gpt-5.6-luna",
             "status": "completed",
             "output": [
                 {
@@ -56,7 +56,7 @@ class FakeBackend:
             yield event
 
     async def list_models(self) -> list[dict[str, Any]]:
-        return [{"slug": "gpt-5.1"}, {"slug": "gpt-5.1-codex-mini"}]
+        return [{"slug": "gpt-5.1"}, {"slug": "gpt-5.6-luna"}]
 
     async def aclose(self) -> None:
         return None
@@ -68,7 +68,7 @@ def make_client(tmp_path, backend: FakeBackend, *, api_key: str | None = None) -
         host="127.0.0.1",
         port=8080,
         proxy_api_key=api_key,
-        default_model="gpt-5.1-codex-mini",
+        default_model="gpt-5.6-luna",
         reasoning_effort="low",
         request_timeout=30,
     )
@@ -95,7 +95,7 @@ class TestChatCompletions:
         response = client.post(
             "/v1/chat/completions",
             json={
-                "model": "gpt-5.1-codex-mini",
+                "model": "gpt-5.6-luna",
                 "messages": [
                     {"role": "system", "content": "system prompt"},
                     {"role": "user", "content": "classify this"},
@@ -222,6 +222,21 @@ class TestAccessControl:
         assert unauthorised.status_code == 401
         assert authorised.status_code == 200
 
+    def test_status_page_requires_key(self, tmp_path, backend):
+        client = make_client(tmp_path, backend, api_key="s3cret")
+        try:
+            unauthorised = client.get("/")
+            authorised = client.get(
+                "/",
+                headers={"Authorization": "Bearer s3cret"},
+            )
+        finally:
+            client.__exit__(None, None, None)
+
+        assert unauthorised.status_code == 401
+        assert authorised.status_code == 200
+        assert "paperless-chatgpt-proxy" in authorised.text
+
     def test_health_stays_open(self, tmp_path, backend):
         client = make_client(tmp_path, backend, api_key="s3cret")
         try:
@@ -240,4 +255,4 @@ class TestModels:
         assert response.status_code == 200
         body = response.json()
         assert body["object"] == "list"
-        assert [model["id"] for model in body["data"]] == ["gpt-5.1", "gpt-5.1-codex-mini"]
+        assert [model["id"] for model in body["data"]] == ["gpt-5.1", "gpt-5.6-luna"]

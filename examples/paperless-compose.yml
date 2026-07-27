@@ -23,14 +23,14 @@ services:
     restart: unless-stopped
     environment:
       PROXY_API_KEY: ${PROXY_API_KEY:?set PROXY_API_KEY in .env}
-      CHATGPT_MODEL: ${CHATGPT_MODEL:-gpt-5.1-codex-mini}
+      CHATGPT_MODEL: ${CHATGPT_MODEL:-gpt-5.6-luna}
     volumes:
       - chatgpt-proxy-data:/data
     expose:
       - "8080"
 
   webserver:
-    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.0.3
     restart: unless-stopped
     depends_on:
       - db
@@ -51,8 +51,9 @@ services:
       PAPERLESS_AI_ENABLED: "true"
       PAPERLESS_AI_LLM_BACKEND: openai-like
       PAPERLESS_AI_LLM_ENDPOINT: http://chatgpt-proxy:8080/v1
+      PAPERLESS_AI_LLM_ALLOW_INTERNAL_ENDPOINTS: "true"
       PAPERLESS_AI_LLM_API_KEY: ${PROXY_API_KEY}
-      PAPERLESS_AI_LLM_MODEL: ${CHATGPT_MODEL:-gpt-5.1-codex-mini}
+      PAPERLESS_AI_LLM_MODEL: ${CHATGPT_MODEL:-gpt-5.6-luna}
       PAPERLESS_AI_LLM_REQUEST_TIMEOUT: "300"
 
       # The ChatGPT backend serves no embedding models. RAG therefore runs on

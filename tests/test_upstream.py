@@ -66,6 +66,20 @@ class TestSseParsing:
 
         assert events == [{"type": "a"}]
 
+    async def test_non_json_sse_payload_is_not_logged(self, caplog):
+        private_payload = "private-document-content-123"
+        response = httpx.Response(
+            200,
+            content=f"data: {private_payload}\n\n".encode(),
+        )
+
+        with caplog.at_level("WARNING", logger="chatgpt_proxy.upstream"):
+            events = [event async for event in upstream._iter_sse(response)]
+
+        assert events == []
+        assert private_payload not in caplog.text
+        assert f"{len(private_payload)} bytes" in caplog.text
+
     async def test_multiline_data_is_joined(self):
         response = httpx.Response(200, content=b'data: {"type":\ndata: "a"}\n\n')
 

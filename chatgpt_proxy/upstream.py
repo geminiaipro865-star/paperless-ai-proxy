@@ -151,6 +151,6 @@ def _parse_sse_data(payload: str) -> dict[str, Any] | None:
     try:
         parsed = json.loads(payload)
     except json.JSONDecodeError:
-        logger.warning("ignoring non-JSON SSE payload: %.200s", payload)
+        logger.warning("ignoring non-JSON SSE payload (%d bytes)", len(payload))
         return None
     return parsed if isinstance(parsed, dict) else None

@@ -1,0 +1,32 @@
+name: paperless-chatgpt-proxy
+
+services:
+  chatgpt-proxy:
+    build:
+      context: ../..
+    container_name: chatgpt-proxy
+    restart: unless-stopped
+    init: true
+    environment:
+      PROXY_API_KEY: ${PROXY_API_KEY:?set PROXY_API_KEY in the Unraid env file}
+      CHATGPT_MODEL: ${CHATGPT_MODEL:-gpt-5.6-luna}
+      CHATGPT_REASONING_EFFORT: ${CHATGPT_REASONING_EFFORT:-low}
+      CHATGPT_REQUEST_TIMEOUT: ${CHATGPT_REQUEST_TIMEOUT:-300}
+    volumes:
+      - ${APPDATA_PATH:-/mnt/user/appdata/paperless-chatgpt-proxy}/data:/data
+    expose:
+      - "8080"
+    networks:
+      - paperless-ai
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  paperless-ai:
+    external: true
+    name: ${PAPERLESS_NETWORK:?set PAPERLESS_NETWORK to the network used by Paperless-ngx}
